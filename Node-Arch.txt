@@ -1,0 +1,1792 @@
+				Node Internal Architecture
+..............................................................................................
+Threading Models
+Process Architecture
+Components
+instrumentation
+..............................................................................................
+				 What is node.js?
+
+Node.js is opensource and cross platform javascript runtime.
+
+Node.js runs on the V8 Javascript engine, the Core of Google chrome,outside the web browser.
+
+2009
+ Node.js was born based v8 javascript engine.
+.............................................................................................
+				Why Node.js?
+.............................................................................................
+
+Node.js was built to create "Powerfull IO and Network based Applications" using NONBLOCKING / ASYNC ARCH.
+..............................................................................................
+				  IO
+..............................................................................................
+
+IO is ever where , where ever data is transfered from one place to place.
+
+
+What is io ?
+
+Input/output (IO) refers to interaction with devices such as a hard drive, network
+ Generally anything that is not happening in the CPU is called IO
+When you call an API that requests data from IO, you will not get a response instantly, but with some delay
+This delay can be very small for requesting a file on a hard drive, and much longer when requesting data from a network
+............................................................................................
+				IO Architecture
+............................................................................................
+
+Operating System and IO Architecture:
+.............................
+
+
+1.When ever the process is created(runtime) to run application, the operating system creates
+ a low level datastructure (array) in kernal called "file descriptor"/ "file descriptor table".
+
+2.File descriptor is 'mini database holding all io device binding with application runtime'
+
+
+How to design non blocking io Architectures?
+
+
+File Descriptors:
+ - it is ds, array, having values 
+Integer value	Name	<unistd.h> symbolic constant[1]	<stdio.h> file stream[2]
+0	Standard input	STDIN_FILENO	stdin
+1	Standard output	STDOUT_FILENO	stdout
+2	Standard error	STDERR_FILENO	stderr
+
+-Every process when it is created, a new file descriptor table is initalized with three values
+ -stdin-keyword
+ -stdout-terminal
+ -stderr-terminal
+
+if you are going to do io operation
+ -reading a text file from c:\drive(hardisk)
+you can take any language
+java
+
+Types of api:
+
+1.highlevel api -  used by language
+2.system calls- sys calls -lowlevel api -  used by os
+
+console.log() -high level api
+fsstream.read() -high level api
+............................................................................................
+				 BLOCKING IO
+...........................................................................................
+
+
+Blocking Means:
+  it wont move next instruction until current instruction is finished.
+
+instruction could be  
+ computation
+ io
+
+computation : cpu intensive tasks 
+  running loop from 0 to 7632F345
+
+code : collection instruction
+
+1.cpu intensive task -----being executed
+2.simple arthmetic
+3.simple disk io
+4.complex network io
+..........................................................................................
+		  Blocking IO :io operation which blocks the process
+...........................................................................................
+
+Two distinct phases for an input operation:
+
+Waiting for the data to be ready. This involves waiting for data to arrive on the network. When the packet arrives, it is copied into a buffer within the kernel.
+
+Copying the data from the kernel to the process. This means copying the (ready) data from the kernel's buffer into our application buffer
+
+
+ io read-------->
+	dataReady
+ somecode ?
+.............................................................................................
+				Networking, Blocking io
+..............................................................................................
+
+In Internet (web), which request -response based arch (network io)
+
+how to handle multi io model?
+
+In 1996,The arch was designed - multi threaded io processing model : 
+ "Request Per thread model"
+
+For every io request -------The process(server-WebServer)- will create a thread-- that thread will do low level io operation ----> add entry in the fs table----waits for data.
+
+Lets assume 1000 requests = 1000 threads.
+.............................................................................................
+			  Drawbacks of Blocking io and multi threading
+.............................................................................................
+
+In 2000, web started scalling..... requests became more and more...... the server need to handle more req, more req ,more threads , more threads , we need very powerfull machines.
+
+C10k - problem - 2000
+ -  a web server should handle 10 connections in a time.
+
+Multi threading problems
+
+1.ctx switch:
+ In linux uses a apporach to manages threads effefectily - ctx switch
+.............................................................................................
+				Solution to blocking io and multi threading
+............................................................................................
+
+In 2000, inside linux operating system , new io apis were introduced to order solve c10k problem.
+
+New io apis are called nonblocking io apis.
+
+1.select
+
+  the process fires select call and return control back to process
+  once data is ready, fire read call and collect data.
+
+2.poll
+    the drawaback of select and read is called "pull " model, the process needs to fire two api togther.
+
+  poll, means , emit /push data where the data is ready which is event driven arch.
+
+  poll has some limitations
+   - more events cant handled
+
+2.epoll: 
+    I/O event notification facility  :framework
+monitoring
+       multiple file descriptors to see if I/O is possible on any of
+       them.  The epoll API can be used either as an edge-triggered or a
+       level-triggered interface and scales well to large numbers of
+       watched file descriptors.
+
+.............................................................................................
+				Nonblocking arch implmentation
+..............................................................................................
+operating system wrappers
+
+1.select,poll,epoll -  linux
+2.iocp -win
+3.kqueue -mac,open bsd
+
+
+2004 -nginx server
+2005 -ajax
+......
+2009--- Node.js - non blocking arch written using javascript language..
+.......................................................................................
+				Node.js Implemenation
+..........................................................................................
+
+
+Node internal Architecture?
+
+ - Node is the most successful project which implemented "c10k" problom solution architecture.
+
+Node.js implements non blocking arch with help of javascript and libuv.
+
+
+libuv:
+ The c platform abstraction lib.
+libuv is a multi-platform support library with a focus on asynchronous I/O.
+.............................................................................................
+
+According the libuv
+
+.Full-featured event loop backed by epoll, kqueue, IOCP, event ports
+
+All network io operations are performed by "a Thread" called event loop thread.
+
+There is only one Event loop thread per node process.
+
+.............................................................................................
+				Types of IO In node
+
+
+1.Network io
+
+2.File system io
+
+.............................................................................................
+				 Types of Threads
+
+
+Node is really not single Threaded -  multi threaded : General
+
+Node is single threaded - with the context of "non blocking network io calls"
+   -All network requests are handled by only one thread - event loop thread - main thread.
+
+1.Event loop thread/main thread
+
+2.worker pool threads
+   Pool of threads meaning the one or more threads...
+  
+  For handling 
+  -file io operation
+  -user operation
+  -dns operations
+
+In node js io operation including file io is non blocking
+
+	Non blocking fs operations are handled by "worker pool thread"
+
+	Blocking file I/O operations in a thread pool(worker pool thread)"
+..............................................................................................
+				Main thread- Event loop thread
+
+
+When node process initlizes, the main thread is also initalized, which is demone thread.
+but worker pool threads are created/used when the particular operation is executed.
+
+All non blocking io operations are handled by worker pool thread but which can be reused.
+which will not block main thread
+
+Blocking file operations are exected by work pool thread but which cant be reused which will block main thread.
+.............................................................................................
+				Event loop thread has some faces
+.............................................................................................
+
+Event loop thread  is demone which executes a  loop looks like while loop, which iterates the callstack , to see whehter any event arrivied or not.
+
+
+.............................................................................................
+					Threading in node process
+
+There are two types of threads.
+
+1.Event loop thread
+   only one event loop thread or main loop thread, main thread, event thread.
+
+ Event loop thread handles "Non blocking network io(socket) calls- tcp,http,udp,pipes,timers
+
+2.Worker pool(more - n no of threads) thread /Workers threads - Thread Pools
+  Libuv initalizes the n- of let say 10 threads in advance when node process is being started.
+
+
+Work Pool Thread: 
+  -It is used per task thread - request per thread model- dedidcated thread.
+
+"Async vs non blocking"
+
+  -Non blocking means the current thread not to be blocked for io operation.
+
+  -Async means
+       - the current thread not to be blocked for io operations.
+       - schduling the task in different thread of execution , later you can collect result          via events,callbacks,futures
+
+Work pool thread can be used
+
+-For non blocking file system io operation
+
+For async fs api, thread pool thread is created used but it wont be blocked but rather other 
+for sync fs api is created used but it cant be released until the fs operation is completed
+............................................................................................
+				 Implmentation 
+
+How to write different ways of writting nonblocking /async operations
+
+All style can handle events 
+
+1.callback
+2.promise
+3.async await
+...............................................&&&&&&&&&&&&&&&&&.............................
+
+				Nonblocking implementations
+
+
+1.identify the high level non blocking apis
+ 
+IO apis
+Timer apis
+
+setTimeout..
+
+Think:
+1. higher order function
+-function is passed in and around
+
+2.function is object ?
+
+Object:
+passive object - which is inside heap but it does not take any active memory
+active  object  - which is inside heap but it takes memory
+ 
+since function is object can be used 
+ - to push into stack  ---->stack frame - running method --method in memory.
+
+function fun() {
+
+}
+ fun(); -stack framework
+new fun(); - heap allocation.
+
+callback functions:
+  handler function, gets registered, notified once an event is given from kernal.
+
+ --->addeventlisterner('timer',cb)  ----Event Queue ----| waits.
+
+event loop thread 
+ runs the code below
+     |
+while (queue.waitForMessage()) {
+  queue.processNextMessage()
+}
+
+phases-----timer phase----looks the queue-->find right event and pick up the callback function
+and which pause/block the thread , run the function--push into stack------stack framework is created---frame returns data----frame is removed from the memory.
+
+
+//async timers
+
+function delay(cb){
+  //timer : high level async/non blocking api
+  setTimeout(cb,1000);
+}
+function greet(message){
+  console.log(message);
+}
+greet("start app") ; //pushed into stack----frame--running--
+
+//here parameter function gets registered into queue--waits
+//when ever an event is available, event loop thread iterates the queue picks up the right function---it push into stack, creates frame, run the frame and gets the result.
+
+delay(function(){
+    console.log('im delayed')
+})
+
+greet("stop app") ; 
+
+
+setInterval()  - schdule the task in continuouly
+.............................................................................................
+		  Function composition-Callback composition -nested Callbacks
+.............................................................................................
+
+
+
+//callback composition: the output of one callback will be input to another another callback - sequential async composition.
+
+const getUser = (resolve, reject) => {
+    let user = {
+        id: 1,
+        name: 'admin'
+    };
+    //if biz logic
+    if (user) {
+        setTimeout(resolve, 1000, user);
+    } else {
+        setTimeout(reject, 1000, { error: 'User Not found' })
+    }
+}
+
+const login = (user, resolve, reject) => {
+    if (user.name === 'admin') {
+        setTimeout(resolve, 1000, 'login success');
+    } else {
+        setTimeout(reject, 1000, { error: 'login failed' })
+    }
+}
+const showdashboard = (status, resolve, reject) => {
+    if (status === 'login success') {
+        setTimeout(resolve, 1000, 'You are admin');
+    } else {
+        setTimeout(reject, 1000, { error: 'You are not admin' })
+    }
+}
+
+getUser(user => {
+    login(user, status => {
+        showdashboard(status, page => {
+            console.log(status)
+        }, err => {
+            console.log(err)
+        })
+    }, err => {
+        console.log(err)
+    });
+}, err => {
+    console.log(err);
+})
+
+
+callback hell:
+
+ The way we write nested async functions.
+
+fs.readdir(source, function (err, files) {
+  if (err) {
+    console.log('Error finding files: ' + err)
+  } else {
+    files.forEach(function (filename, fileIndex) {
+      console.log(filename)
+      gm(source + filename).size(function (err, values) {
+        if (err) {
+          console.log('Error identifying file size: ' + err)
+        } else {
+          console.log(filename + ' : ' + values)
+          aspect = (values.width / values.height)
+          widths.forEach(function (width, widthIndex) {
+            height = Math.round(width / aspect)
+            console.log('resizing ' + filename + 'to ' + height + 'x' + height)
+            this.resize(width, height).write(dest + 'w' + width + '_' + filename, function(err) {
+              if (err) console.log('Error writing file: ' + err)
+            })
+          }.bind(this))
+        }
+      })
+    })
+  }
+})
+
+
+Questions:
+
+1.Whether this code is able to understand quickly
+2.Whether this code is able to debug
+3.Whehter this code is scalable?
+4.whether this code is maintaiable?
+
+No! -------Callback Hell.
+
+............................................................................................
+Callback Hell:
+
+ -It is not bug or error in code
+ -It is way of writing callback based program
+ -Callback based non blocking programming hard to understand,maintain,debug,scale Which 
+  called as "Callback Hell".
+
+How to write better async/non blocking code without callbacks?
+
+-Generally without callbacks not possible to write async/non blocking code.
+-Rather we can abstract complexity of writting callbacks.
+..............................................................................................
+				Promises
+..............................................................................................
+............................................................................................
+Callback Hell:
+
+ -It is not bug or error in code
+ -It is way of writing callback based program
+ -Callback based non blocking programming hard to understand,maintain,debug,scale Which 
+  called as "Callback Hell".
+
+How to write better async/non blocking code without callbacks?
+
+-Generally without callbacks not possible to write async/non blocking code.
+-Rather we can abstract complexity of writting callbacks.
+
+
+In 2005, JQUERY team started with working complex callback patterns, they found callback hell problem.
+
+They proposed a  Design pattern to write better callback programming(Async) programming.
+
+  "Promise".
+
+Promise is design pattern which hides complexity of callback patterns
+
+
+Since Promise is design pattern, many people have implemented Promise design pattern.
+
+1.JQuery -first promise implementation
+2.many libs and frameworks
+
+...........................................................................................
+
+...........................................................................................
+
+In order standarize , ECMA committe decided to include Promise Design pattern at language level .(ES 6)
+2012 E6 Committe introduced promise design pattern  as  "Promise" Object  in javascript.
+
+Promises and non blocking,async and callback hell issues:
+.........................................................
+
+1.Promise by deafult is Async. Which implements timer api with 0 ms .
+
+Promise can be used with any async callback based  implementations.
+
+Objective:
+
+ To remove callbacks in async/non blocking code. write cleaner async programming.
+ To remove complex callback chaining code.
+
+In order standarize , ECMA committe decided to include Promise Design pattern at language level .(ES 6)
+2012 E6 Committe introduced promise design pattern  as  "Promise" Object  in javascript.
+
+Promises and non blocking,async and callback hell issues:
+.........................................................
+
+1.Promise by deafult is Async. Which implements timer api with 0 ms .
+
+Promise can be used with any async callback based  implementations.
+
+Objective:
+
+ To remove callbacks in async/non blocking code. write cleaner async programming.
+ To remove complex callback chaining code.
+
+Promise Implemenation:
+
+1. Create Promise Object from Promise contructor
+2. Create Promise object from factory apis 
+
+Promise object methods:
+1.then - success
+2.catch - errors
+3.finally - clean up
+factory api to create Promise object
+4.resolve
+5.reject
+.......................................
+6.all
+7.race
+
+
+
+//factory pattern : Promise.resolve/reject==>Promise Object.
+
+
+//how to process success results
+function getMessage() {
+    return Promise.resolve('Hello')
+}
+
+function getError() {
+    return Promise.reject('oops!!')
+}
+
+function login(userName = "admin", password = "admin") {
+    if (userName === 'admin' && password === 'admin') {
+        return Promise.resolve('success')
+    } else {
+        return Promise.reject('failed')
+    }
+}
+function blockMe(status) {
+    console.log(status)
+}
+blockMe('start')
+getMessage()
+    .then(value => console.log(value))
+    .catch(err => console.log(err))
+getError().then(value => console.log(value))
+    .catch(err => console.log(err))
+
+login('admin', 'admin')
+    .then(value => console.log(value))
+    .catch(err => console.log(err))
+
+login('foo', 'admin')
+    .then(value => console.log(value))
+    .catch(err => console.log(err))
+
+blockMe('end')
+
+..................................................................................
+                            Constructor vs Factory
+                   new Promise() vs Promise.resolve/reject
+........................................................................................
+
+Constructors are used to convert any callback based programming into Promises.
+				|    callee
+ caller			        |
+
+
+
+//Promise Constructors
+
+//calleee
+//legacy getUser using callbacks
+/**
+function getUser(resolve, reject) {
+
+    let user = {
+        id: 1,
+        name: 'admin'
+    };
+    let error = {
+        message: 'User not found'
+    }
+    if (user) {
+        setTimeout(resolve, 1000, user)
+    } else {
+        setTimeout(error, 1000, error)
+    }
+}
+
+
+//caller
+//here we pass callback function as parameter
+getUser(res => {
+    console.log(res)
+}, err => {
+    console.log(err);
+})
+ */
+
+//caller with promise
+function getUser() {
+
+    return new Promise((resolve, reject) => {
+        let user = {
+            id: 1,
+            name: 'admin'
+        };
+        let error = {
+            message: 'User not found'
+        }
+        if (user) {
+            setTimeout(resolve, 1000, user)
+        } else {
+            setTimeout(reject, 1000, error)
+        }
+    })
+
+}
+
+//caller
+//here we dont pass callback function as parameter
+getUser()
+    .then(res => console.log(res))
+    .catch(err => console.log(err));		
+
+.............................................................................................
+				Callback Hell-Solved
+............................................................................................
+
+//destructuring console object
+const { log } = console;
+
+//callback hell solving:
+const getUser = () => {
+    return new Promise((resolve, reject) => {
+        let user = {
+            id: 1,
+            name: 'admin'
+        };
+        //if biz logic
+        if (user) {
+            setTimeout(resolve, 1000, user);
+        } else {
+            setTimeout(reject, 1000, { error: 'User Not found' })
+        }
+    });
+}
+
+const login = user => {
+
+    return new Promise((resolve, reject) => {
+        if (user.name === 'admin') {
+            setTimeout(resolve, 1000, 'login success');
+        } else {
+            setTimeout(reject, 1000, { error: 'login failed' })
+        }
+    })
+}
+const showdashboard = status => {
+    return new Promise((resolve, reject) => {
+        if (status === 'login success') {
+            setTimeout(resolve, 1000, 'You are admin');
+        } else {
+            setTimeout(reject, 1000, { error: 'You are not admin' })
+        }
+    });
+}
+/////////////////////////////////////////////////
+//caller : callback based
+
+// getUser(user => {
+//     login(user, status => {
+//         showdashboard(status, page => {
+//             console.log(status)
+//         }, err => {
+//             console.log(err)
+//         })
+//     }, err => {
+//         console.log(err)
+//     });
+// }, err => {
+//     console.log(err);
+// })
+
+//promise based -v1
+/**
+getUser()
+    .then(user => {
+        login(user)
+            .then(status => {
+                showdashboard(status)
+                    .then(page => {
+                        console.log(page);
+                    })
+                    .catch(err => console.log(err))
+            })
+            .catch(err => {
+                console.log(err)
+            })
+    })
+    .catch(err => {
+        console.log(err)
+    });
+    **/
+
+//code refactoring:
+
+// getUser()
+//     .then(user => {
+//         return login(user);
+//     })
+//     .then(status => {
+//         return showdashboard(status)
+//     })
+//     .then(page=>{
+//         console.log(page)
+//     })
+//     .catch(err => console.log(err));
+
+getUser()
+    .then(user => login(user))
+    .then(status => showdashboard(status))
+    .then(page => console.log(page))
+    .catch(err => console.log(err));
+//We can reduce the code using es6 destructuring concept : method reference 
+
+
+//This is for single params
+getUser()
+    .then(login) //method reference
+    .then(showdashboard) //method reference
+    .then(log)
+    .catch(log);
+
+............................................................................................
+				async and await keywords
+............................................................................................
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
+Promise Hell:
+
+ In large code base, you can see many "thenables", how to reduce thenables.
+
+ES 7 introduced even simple keywords , looks like sync programm/sequencial call.
+"Sync style of async programm"
+
+"async function and await keyword"
+............................................................................................
+async functions:
+................
+
+-async function by default returns promise object with success data.
+
+When should i use async function?
+
+1.if you want to return default promise.
+
+async function getValue1(){
+    return 10;  // return Promise.resolve(10)
+}
+console.log(getValue1());
+getValue1().then(value=>console.log(value))
+//async function, how to avoid thenables
+
+//callee should return promise
+const getUser = () => {
+    return new Promise((resolve, reject) => {
+        let user = {
+            id: 1,
+            name: 'admin'
+        };
+        //if biz logic
+        if (user) {
+            setTimeout(resolve, 1000, user);
+        } else {
+            setTimeout(reject, 1000, { error: 'User Not found' })
+        }
+    });
+}
+
+const login = user => {
+
+    return new Promise((resolve, reject) => {
+        if (user.name === 'admin') {
+            setTimeout(resolve, 1000, 'login success');
+        } else {
+            setTimeout(reject, 1000, { error: 'login failed' })
+        }
+    })
+}
+const showdashboard = status => {
+    return new Promise((resolve, reject) => {
+        if (status === 'login success') {
+            setTimeout(resolve, 1000, 'You are admin');
+        } else {
+            setTimeout(reject, 1000, { error: 'You are not admin' })
+        }
+    });
+}
+
+//how to process this without using thenables
+//async ....await keyword
+
+async function main() {
+    //    getUser()
+    //     .then(user=>console.log(user))
+    //     .catch(err=>console.log(err))
+    try {
+        const user = await getUser();
+        const status = await login(user);
+        const page = await showdashboard(status);
+        console.log(user, status, page);
+    }
+    catch (err) {
+        console.log(err);
+    }
+}
+main();
+..............................................................................................
+			           Async composition
+.............................................................................................
+
+Types of composition:
+
+1.sequential async compostions.
+
+ Operations are async but results are combined in sequential fashion
+
+eg: 
+i have three operations, startDb,startConfigServer,startWebServer 
+ - i need to ensure that all servers should start perfectly, then i have to say "Servers Up".
+
+ "Promise Chaning" - --todo you implement.
+
+2.Parallel async compostions (looks like running all code in multiple threads, but not running multi threads).
+
+ Promise.all
+ Promise.any
+ Promise.race
+
+Promise.all:
+  Lets say we want many promises to execute in parallel and wait until all of them are ready.
+ For eg, dowload serveral urls in paralle and process the content once they are all done.
+
+Promise.all([arrayofPromises])
+
+
+
+function fun1() {
+    return new Promise((resolve, reject) => {
+        console.log('fun1 is called')
+        setTimeout(resolve, 3000, 1);
+    })
+}
+
+function fun2() {
+    return new Promise((resolve, reject) => {
+        console.log('fun2 is called')
+        setTimeout(resolve, 2000, 2);
+    })
+}
+function fun3() {
+    return new Promise((resolve, reject) => {
+        console.log('fun3 is called')
+        setTimeout(resolve, 1000, 3);
+    })
+}
+
+function fun4() {
+    return new Promise((resolve, reject) => {
+        console.log('fun4 is called')
+
+        setTimeout(reject, 6000, "error");
+    })
+}
+function main() {
+ // with success
+    Promise
+        .all([fun1(), fun2(), fun3()])
+        .then(result => { console.log(result) })
+        .catch(err => console.log(err))
+
+    //error 
+    Promise
+        .all([fun1(), fun2(), fun3(), fun4()])
+        .then(result => { console.log(result) })
+        .catch(err => console.log(err))
+}
+main();
+
+Note:
+Promise.all rejects as a whole if any promise rejects.
+This is good for "all or nothing" use cases.
+
+Eg:
+ Promise.all(fetch('html'),fetch('css'),fetch('config').then(load the page).catch(dont load)
+..............................................................................................
+Promise.any/race:
+
+ It waits only for the first fulfilled promise and gets its results.
+ if all of the given promises are rejected then  returned promise is rejected 
+
+
+
+function fun1() {
+    return new Promise((resolve, reject) => {
+        console.log('fun1 is called')
+
+        setTimeout(resolve, 3000, 1);
+    })
+}
+
+function fun2() {
+    return new Promise((resolve, reject) => {
+        console.log('fun2 is called')
+
+        setTimeout(resolve, 2000, 2);
+    })
+}
+function fun3() {
+    return new Promise((resolve, reject) => {
+        console.log('fun3 is called')
+
+        setTimeout(resolve, 1000, 3);
+    })
+}
+
+function fun4() {
+    return new Promise((resolve, reject) => {
+        console.log('fun4 is called')
+
+        setTimeout(reject, 6000, "error");
+    })
+}
+function promiseAll() {
+    // with success
+    Promise
+        .all([fun1(), fun2(), fun3()])
+        .then(result => { console.log(result) })
+        .catch(err => console.log(err))
+
+    //error 
+    Promise
+        .all([fun1(), fun2(), fun3(), fun4()])
+        .then(result => { console.log(result) })
+        .catch(err => console.log(err))
+}
+
+function promiseRace() {
+    // with success
+    Promise.race([fun1(), fun2(), fun3()])
+        .then(result => { console.log(result) })
+        .catch(err => console.log(err))
+
+    Promise
+        .race([fun1(), fun2(), fun3(), fun4()])
+        .then(result => { console.log(result) })
+        .catch(err => console.log(err))
+}
+
+function main() {
+    //promiseAll()
+    promiseRace();
+   
+}
+main();
+/////////////////////////////////////////////////////////////////////////////////////////////
+					Module patterns
+.............................................................................................
+What is module?
+ Organization of code physically and logically.
+
+Pysically - folders and files
+Java 
+ com/google/mail
+
+logical
+ javax
+ java
+ org
+ com.google.mail.inbox - dns convention
+ |    |      |    |
+                  name of the module
+             Name of the project
+      Name of the Company
+company/organaization
+
+What about javascript?
+In javascript files are created, express code inside files, we link those files inside html.
+fundamentally javascript is file based modular code.
+
+When js apps started growing, complexity of code segration also grown up.
+
+in order to modualrize the code, many dev introduced design patterns
+
+1.Namespace design pattern : 2000 : jquery
+2.AMD -Async Module Defintion : dojo
+---------------------------------------------------------
+3.CJS - Common JS =  namespace + amd
+4.ES 6 Module design pattern  = amd + cjs
+------------------------------------------------------------
+5.System = AMD = CJS + ES 6
+6.UMD = NAMESPACE + AMD + CJS = ES 6
+............................................................................................
+				   common js
+
+Common js is just a spec who tells how to spilt code, how to share the code, how to import code.
+
+Implementation:
+  common js loader
+
+Node js by default has implemented common js.
+
+common js spec keywords
+
+code sharing:
+ exports
+ module.exports
+
+What can be the code?
+ variables having any literals
+ functions
+ objects
+ arrays
+ classes
+
+ exports - just variable
+
+
+code importing
+ require('file')
+
+How to share code ?
+
+1.pack the code into object and share that object
+  {
+    code...
+  }
+2.share the code as it is
+
+
+
+class GreeterService {
+
+    sayGreet(){
+        return 'Hello';
+    }
+}
+//return object reference
+module.exports = new  GreeterService();
+
+// const result = require('./mylib')
+// console.log(result);
+// console.log(result.firstName)
+//object destrcturing 
+const { firstName } = require('./mylib');
+const Employee = require('./employee')
+console.log(firstName)
+const { sayGreet } = require('./services/greeter.service')
+
+let emp = new Employee();
+console.log(Employee)
+console.log(emp.findAll())
+// console.log(greeter.sayGreet())
+console.log(sayGreet());
+
+//code to be packed inside object
+/**
+ * function require(fileName){
+ * 
+ *    var exports={}
+ *    return exports;
+ * }
+ * 
+ * function require(fileName){
+ *    var exports={}
+ *    exports.firstName='subramanian'
+ *    return exports;
+ * }
+ */
+//Object augmentation.
+/**
+ * Runtime layout of object in javascript is "map/hashtable ds"
+ * since js object is just map , we can do curd operation -  add,delete,update,iterate : augmentation 
+ * 
+ * let demo={};
+ * demo.a =10 ;  we add new property into object
+ * demo.b =20
+ * let demo = {};
+//add
+console.log(demo)
+demo.a = 10;
+console.log(demo)
+demo.b = 20
+console.log(demo)
+
+//update - if prop exits ,update,else add.
+demo.a = 90;
+console.log(demo)
+//delete
+delete demo.b
+console.log(demo)
+demo.b = 20
+console.log(demo)
+//iterate
+for (const key in demo) {
+   console.log(key , demo[key])
+}
+ * 
+ */
+//private to this module
+const add = (a,b)=> a + b;
+
+exports.firstName = 'Subramanian';
+exports.lastName = 'Murugan';
+exports.salary =1000;
+exports.isValid =true;
+exports.calculate = ()=> add(1,2);
+exports.skills = ["java","javascript"];
+.............................................................................................
+				Task: Build TodoService App
+
+Req:
+
+1. you have to have todo mock data
+2. you need to implement
+   -add new todo
+   -update existing todo
+   -remove todo
+   -findby 
+      -id
+      -todo
+   -findAllCompleted and not Completed
+
+Your app should be modularizied -  folders - src/services  src/mock-data/ src/controllers
+All api should be async - use timer to simulate async 
+ -You have to test your api based on callbacks,promises, async..await.
+.............................................................................................
+....................................&&&&&&&&&................................................
+				IO -Blocking, non blocking ,Streaming
+............................................................................................
+io operations:
+
+Types of io
+
+1.fs io
+   -read,write from the disk file
+Threading:
+  worker pools
+
+2.network io
+  -http,tcp,udp,...
+  Threading 
+   event loop thread.
+
+flow:
+  when node starts by initalizing the script(index.js)
+
+  -event loop threads starts , waiting for events
+
+fs operation is happened, it delegates to worker pool thread.
+
+non blocking 
+ |-----delegates--return control----|---starts disk io
+
+blocking model
+ |-----delegates--dont return control----|---starts disk io
+
+..............................................................................................					  IO 
+                 Async io and Sync IO - Nonblocking IO / Blocking IO
+..............................................................................................
+Running code inside worker poll thread
+
+const fs = require('fs')
+
+
+function blockMe(message){
+  console.log(message);
+}
+
+const filePath = './src/assets/info.txt'
+const fileOptions = {
+    encoding:'utf-8'
+}
+
+blockMe('start reading')
+//async/non blocking  file api :
+fs.readFile(filePath, fileOptions, (err, data) => {
+    if (err) {
+        throw err;
+    }
+    console.log(data);
+})
+blockMe('start ending')
+.............................................................................................
+Running code inside worker poll thread
+
+const fs = require('fs')
+
+function blockMe(message) {
+    console.log(message);
+}
+
+const filePath = './src/assets/info.txt'
+const fileOptions = {
+    encoding: 'utf-8'
+}
+
+blockMe('start reading')
+//async/non blocking  file api :
+const fileContent = fs.readFileSync(filePath, fileOptions)
+console.log(fileContent)
+blockMe('start ending')
+
+........................................................................................
+Think : what is default size of the worker pool thread? - 4
+
+if you want to increase no of worker pool threads, that can increased via env variable
+
+export UV_THREADPOOL_SIZE=15
+
+Performance Tips:
+   "Dont over use Workerpoll threads"
+      -which eats memory
+      -cpu need to do ctx switch-cpu overhead.
+.............................................................................................
+ 
+   From the event loop, dont call blocking apis : Dont block Event loop thread 
+                       Gloden Rule : Dont block event loop thread
+...........................................................................................
+
+Event Loop thread can be blocked
+
+-blocking io apis
+-CPU intensive apis
+   -crypto module  when it computes long hash values, which takes lot of cpu time
+   -zip compression algorthim may block
+
+
+
+eg:
+const fs = require('fs')
+
+
+function blockMe(message){
+  console.log(message);
+}
+
+const filePath = './src/assets/info.txt'
+const fileOptions = {
+    encoding:'utf-8'
+}
+
+blockMe('start reading')
+function sleep(ms){
+    const time =  Date.now() + ms;
+    while(Date.now() < time);
+}
+//async/non blocking  file api :
+fs.readFile(filePath, fileOptions, (err, data) => {
+    if (err) {
+        throw err;
+    }
+    sleep(10000)
+    console.log(data);
+})
+
+blockMe('start ending')
+..............................................................................................
+..............................................................................................
+					File io 
+
+1.blocking file io
+
+2.non blocking file io
+  -non streaming file io
+       -the file content is loaded into node process memory first , then will be given to 
+        caller
+        -incase it is in network env,then more files are loaded into memory, then there will not be memory,so the process might crash.
+
+  -streaming file io  
+     sending data over io channel chunk by chunk
+   
+Types of Streams:
+
+1.Readable Stream : input
+2.Writeable stream : output
+3.Duplex stream : read + write
+
+
+Node has lot of built in stream apis
+....................................
+
+Built in readable Streams:
+
+-HTTP responses, on the client
+-HTTP requests, on the server
+-fs read streams
+-zlib streams
+-crypto streams
+-TCP sockets
+-child process stdout and stderr
+-process.stdin
+
+Writable Streams:
+
+-HTTP requests, on the client
+-HTTP responses, on the server
+-fs write streams
+-zlib streams
+-crypto streams
+-TCP sockets
+-child process stdin
+-process.stdout, process.stderr
+
+
+All streaming apis are powered with events
+node io streams has built in events.
+events are emitted by node.
+Our programs are listeners
+
+..........................................................................................					Streaming io is other wise called "evented io"
+...........................................................................................
+
+Common events in all io
+.........................
+
+
+1.data event:
+ which is emitted by node, for each chunk.
+
+2.close event:
+  The 'close' event is emitted when the stream and any of its underlying resources (a file descriptor, for example) have been closed.
+
+3.end event:
+ The 'end' event is emitted when there is no more data to be consumed from the stream.
+
+3.Event: 'error'
+ The 'error' event may be emitted by a Readable implementation at any time
+Typically, this may occur if the underlying stream is unable to generate data due to an underlying internal failure, or when a stream implementation attempts to push an invalid chunk of data.
+.............................................................................................
+					Backpressure
+.............................................................................................
+
+The source stream is pushing chunks at high speed, where the caller not able to process the stream -  backpressure is created.
+
+how to handle back pressure
+
+pipe
+
+drain event
+pause,resume methods
+..............................................................................................
+					Network io
+.............................................................................................
+
+Non blocking http servers
+
+..............................................................................................
+					Networking IO
+..............................................................................................
+
+All netorking io operations are handled by "event loop thread".
+
+Networking io apis/modules
+
+1.http
+2.tcp
+3.udp
+
+All networking modules are by default streamed io/evented io.
+
+const http = require('http');
+
+const server = http.createServer((req, res) => {
+    //io operation : write hello into socket outputstream
+    res.end('hello')
+})
+
+server.listen(3000, () => {
+    console.log('Http server is up and running')
+});
+
+What if i want to build the enterprise applications?
+  -Framework
+
+Express.js
+restify
+loopback
+hapi
+..............................................................................................
+					Express.js
+..............................................................................................
+
+Express.js abstraction on node core http module.
+
+Express provides
+
+-abstraction on http methods -  GET,POST,DELETE,PUT
+-abstraction on http urls - /api /api/todos
+-middlewares - extra logicas
+-routers - which isloate domain models
+.............................................................................................
+		How to diagnose and pinpoint node js performance issuses
+..............................................................................................
+				Clinic.js Doctor
+.............................................................................................
+.............................................................................................
+		Clinic.js - Simple But high expressive tool  Diagnose 
+.............................................................................................
+
+Setup :
+ Install clinic tool.
+
+Requirement
+Node version > 8.11.
+
+1.npm i clinic -g 
+
+Qlik-Node-React-Training
+
+2.npm i autocannon -g
+
+Clinic sub commands
+
+1.doctor
+2.flame
+3.bubbleprof
+
+
+Blocking Event loop:
+
+'use strict'
+
+const express = require('express');
+const app = express();
+
+function sleep(ms) {
+    const timer = Date.now() + ms
+    while (Date.now() < timer);
+}
+
+app.get('/', (req, res, next) => {
+    //block the event loop thread.
+    sleep(30)
+    res.send({})
+    next()
+})
+
+app.listen(3000)
+.............................................................................................
+
+How to test blocking event loop?
+
+tunningapp>clinic doctor --autocannon [/] -- node src/sloweventloop
+
+
+You can see the report
+ -Recommendations - follow the recommendation for next activity.
+
+
+FlameGraph:
+
+Each block represents the time spent executing calls to a function.
+
+"The wider the block, the more time was spent"
+
+Blocks sit on the function that called them, so the stack below each block shows its stack trace.
+
+Double clicking on a block will expand it and its children.
+
+...........................
+A hot function
+This is a "hot" function - a lot of time was spent at the top of the stack, running the code inside this function. The brighter the colour on the exposed top of a block, the "hotter" it is compared to the rest of the profile.
+
+This might signify a problem: for example, it might be a slow function that can be optimised, or that is called very many times by functions below it
+............................................................................................
+				  Doctor
+............................................................................................
+
+Steps :
+
+Blocking event loop thread
+ -cpu intensive task
+ -io task
+    long running blockig io
+
+1.Get sample code
+  
+index.js
+'use strict'
+
+const restify = require('restify')
+const server = restify.createServer()
+
+function sleep (ms) {
+  const future = Date.now() + ms
+  while (Date.now() < future);
+}
+
+server.get('/', function (req, res, next) {
+  sleep(30)
+  res.send({})
+  next()
+})
+
+server.listen(3001)
+
+process.on('SIGINT', function () {
+  console.error('Caught SIGINT, shutting down.')
+  server.close()
+})
+
+Test this is working:
+
+http://localhost:3001/
+
+{}
+
+if you run single request, we cant get much data or indication of how it performs when handling many requests.
+
+We need to supply load test - autocannon.
+
+2.Load test 
+  clinic doctor  --on-port 'autocannon localhost:$PORT' -- node slow-event-loop
+
+clinic doctor invoke docker command
+--on-port : flag will execute the supplied script as soon as the start starts listening on  a port
+$PORT -  server port 
+--node  : run the javascript 
+
+3.Reading Profile data
+
+Tabs:
+
+1.Alertbar
+2.Graphs
+3.Recommendations Panel
+
+1.Alertbar
+   It gives main problem detail
+
+2.Graphs				
+    Plot the data pointers from which doctor is drawing its conclusions
+
+3.Recommendations Panel
+   Detailed recommendations 
+
+.........................................................................................
+cpu usage%
+
+CPU usage can execeed 100% if the machine has multiple cores.100% of the capcity of a single core.
+
+High Cpu usage is triggered when "cpu insentive operations are high" in your application
+
+Too little /low cpu usage can be a sign a sign that the node process is "struck waiting for an IO Operation to complete, like slow database query or file writes"
+
+Memory :
+........
+RSS : 
+The amount of mememory the node process is using:
+
+-This is always highest value, representing all memory allocated as part of the execution of this process.
+
+Total Heap size:
+   This is the amount of memory/space that has been set for
+   - objects, strings,function closures
+
+Heap Used:
+  This is how much memory is actually beign used at this point
+
+Memory leaks:  
+ When constantly increasing heap used line suggests a a possible memory leaks.
+
+ The references to something are remaining-scope,it cant be ever be garabge collected and therefore eventually run dry.
+
+Use cases: when the mememory leaks will come?
+
+Memory leaks happen when expected short lived objects are attached to long lived ones.
+
+Event loop delay in ms:
+......................
+It reprents points in time in which node.js was blocked by runnin sync code.
+
+Y axis represents the duration of the event loop delay.
+
+Active Handles:
+...............
+It shows the quantity of the IO Handles presently active,awaiting an output.
+No of active handles gives us an idea of how much async io activity the node process is waiting on at given point in time.
+
+It may rise and fall as requests are handled and completed.
+
+We can note down cpu spikes and memory usage, event delay when no of active handles are increased.
+............................................................................................
+			How to fix problem based on Recommendations
+............................................................................................
+
+Doctor gives recommendation that , we have event loop is blocked. Doctor has given prescription like below.
+
+Run flame:
+ clinic doctor  --on-port 'autocannon localhost:$PORT' -- node slow-event-loop
+..............................................................................................
+				IO Problems and how to identifiy
+................................................................................................
+'use strict'
+
+const restify = require('restify')
+const server = restify.createServer()
+const async = require('async')
+
+function awaitData (callback) {
+  async.series([
+    (done1) => setTimeout(done1, 1),
+    (done1) => async.parallel([
+      (done2) => setTimeout(done2, 1),
+      (done2) => setTimeout(done2,1),
+      (done2) => setTimeout(done2,1),
+      (done2) => setTimeout(done2,1),
+      (done2) => setTimeout(done2, 1)
+    ], done1)
+  ], callback)
+}
+
+server.get('/', function (req, res, next) {
+  awaitData(function () {
+    res.send({})
+    next()
+  })
+  //res.send({})
+})
+
+server.listen(3001)
+
+process.on('SIGINT', function () {
+  console.error('Caught SIGINT, shutting down.')
+  server.close()
+})
+.....................................................................................
+When test this code against doctor
+
+
+clinic doctor  --on-port 'autocannon localhost:$PORT' -- node slow-io
+Running 10s test @ http://localhost:3001
+
+The cpu usage is in red.
+It may slow serveral spkies,
+which identicates is very low usage of cpu.
+Less activity on cpu.
+
+Why:
+ likly slow async operations : our app is waiting for external IO to resolve promise or triggers callbacks.
+
+Recommendations:
+Doctor has found a potential I/O issue:
+There may be long-running asynchronous activities
+This can mean that the bottleneck is not the Node process at all, but rather an I/O operation
+Diagnose: Use clinic bubbleprof to explore asynchronous delays – run clinic bubbleprof -h to get started.
+
+Use bubbleprof to idententify the slow async operations activities--- trace slow async actitives
+
+
+ clinic bubbleprof  --on-port 'autocannon localhost:$PORT' -- node slow-io
+..............................................................................................
+					Flame Graph tool
+.............................................................................................
+
+Objective:
+
+-To unconver bottlenecks and hot paths in your code with flamegraphs.
+
+Which Provides two meterics:
+
+-The amount of time a function was on cpu. - frame -Runtime reprsentation of a function
+-The the amount of time a function on the top of stack. - frame reference .
+
+if a function is observed as being at the top of the stack in higher ratio its refered to as being hot - hot function.
+
+
+Demo - slow function Analysis:
+..............................
+
+'use strict'
+
+const express = require('express')
+
+const app = express()
+const payload = initPayload()
+
+app.get('/', (req, res) => {
+  res.send(payload())
+})
+
+app.listen(3000)
+
+function initPayload (idSize = 20) {
+  if (idSize < 6) throw Error('idSize must be greater than 5')
+  return function payload () {
+    let chars = ''
+    let n = idSize
+    const date = Date.now()
+    const radix = 36
+    n *= n * idSize
+    while (n--) {
+      const num = date + n
+      chars += num.toString(radix).toUpperCase()
+    }
+    const id = chars.slice(-idSize)
+    return { date, id }
+  }
+}
+>clinic flame --on-port 'autocannon localhost:$PORT' -- node 1-server-with-slow-function.js
+
+When generating the graph:
+
+1.Which functions called each other
+2.How much time was each function observed on cpu?
+3.How much time was each function observed at the top of of the stack?
+
+1.Which functions called each other
+
+2.block width : 
+
+Brighter ="hotter"= longer on stack top=longer blocking event loop
+
+final optimized code:
+'use strict'
+
+const fastify = require('fastify')
+
+const app = fastify()
+const payload = initPayload()
+
+app.get('/', (req, reply) => {
+  reply.send(payload())
+})
+
+app.listen(3000)
+
+function initPayload (idSize = 20) {
+  if (idSize < 6) throw Error('idSize must be greater than 5')
+  const max = 2147483647
+  var count = 0
+  return function payload () {
+    count = (count + 1) % max
+    const date = Date.now()
+    const chars = count.toString(36).toUpperCase()
+    const id = '0'.repeat(idSize - chars.length) + chars
+   // return `{"date": ${date}, "id": "${id}"}`
+     return JSON.stringify({date, id})
+  }
+}
+.............................................................................................
+
+
+
+
+
+
+
