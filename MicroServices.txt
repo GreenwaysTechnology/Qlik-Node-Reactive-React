@@ -1,0 +1,256 @@
+					MicroServices
+..............................................................................................
+
+What is Micro Service?
+
+MicroService is collection of architecture principles for building distributed applications.
+
+Distributed Application:
+
+Biz Models
+
+-Data 
+   -Store    - Data Layer
+   -Process   - Service
+   -Presentation -UI layer
+
+History of Distributed Computing:
+
+1.IBM MainFrame
+    
+ Thin client-------|IBM MainFrame---Process + DataStorage
+
+2.Client-Server - Based Micro Computers
+  
+  Single Tier client server
+
+ PersonalComputer-------|MicroComputer---Process + DataStorage
+
+ Two Tier client server  -RPC 
+
+ PersonalComputer-------|MicroComputer---Process + DataStorage
+ (UI + BIZ Logic)-------MicroComputer-----DataStorage
+
+
+ Three Tier client server  
+
+  PersonalComputer-------|MicroComputer---Process + DataStorage
+
+ (UI + client side biz logic)-------MicroComputer--server side biz logic---DataStorage
+
+ N-Tier client server  
+
+  PersonalComputer-------|MicroComputer---Process + DataStorage
+
+ (UI + client side biz logic)---------[server side biz logic-m1]--network---[DataStorage-m2]
+
+After 1990s
+
+N-Tier client server - web based
+
+  UI(Browser)------internet----http-------|WebServer----|WebContainers---Run a program--database.
+...........................................................................................
+			 N-Tier client server -Java - JEE
+...........................................................................................
+
+Technology Components of N-Tier client server Architecture in java:
+.........................................................
+
+1. Web container - JVM - Where we are running web compoents
+     -Web Tech - Servlets/JSP
+2. JDBC - connector to connect databases
+
+How application was built and delivered to the customer?
+
+-SDLC - Water fall
+
+-Req
+-Design
+-development
+-testing
+-deployment-Production 
+  ----Live
+   
+Monolith:
+
+-Technology first J2EE, Domain Next.
+
+Problems in Traditonal destributed app development:
+
+-Vendor-lock in : Mono-lithic
+   -DEV,TESTING,PRODUCTION.
+-Work flow is highly sequencial
+   Req -Complete
+   Dev
+   testing
+   Release
+   Production
+  Delay in delivery:Cost increased
+-Production cost was huge
+
+Data Centers
+ -need to purchase high powered servers - bare metal servers
+ 
+Cost:
+   -Hardware
+   -OS -Linux-Ubuntu
+   -Tools -Servers,databases etc....
+   -Matrix Hell -  Mapping software components in dev and Production..
+............................................................................................					Amzon and distributed Computing
+............................................................................................
+
+How to simplify the Software work flow?
+
+Automation: Devops
+  Testing
+  Release
+  Production
+
+Different Tech Stack:
+ -Break the Application into smaller and smaller application
+
+Build ,test,release ,deploy , maintain in smaller -  sub domains
+
+IF App needs to talk to external systems like Message Brokers, other Systems like Main frames.
+
+RPC/RPI
+MOM
+Connectors Arch.
+
+BIZ LOGIC:
+
+1- Service Layer : isloate service layer into separate component
+
+ can be inside one app - one layer, that layer may run on different jvms -  distributed Arch.
+
+
+Layer :
+
+ Client ---- Web Layer  ----Service Layer ---- Repository Layer
+...............................................................................................
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+Packaging Model:
+ 
+WAR - Web archive
+EAR .
+
+Problems with Single JAR/WAR:
+
+1. Scalability
+ Vertical scablitity
+ Horzitional scability 
+
+2.Deployments
+    -Bare Metal Deployment
+
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+Monoloith distributed app development drabackbacks:
+
+-Time is taken for project delivery
+   -Requirements 
+   -High level design and low level design
+   -coding
+   -testing
+   -release
+   -production- live
+
+-Technology Stack and Vendor lock in
+   -You need to build the entire app using one technology or one vendor product
+    eg: J2EE, Oracle,Weblogic
+
+-Production and maintance cost
+  -You need to setup large data centers , you need to maintain them.
+
+Companies like amzon,netflix,google wanted to change the app development model.
+                                "Micro services"
+
+
+Micro services are architural model of req,dev,test,relase,production,maintaince different ways.
+    Continous req collecting
+    Continous dev
+    Continuous testing
+    Continuous release
+    Continuous deployment
+    Using rented data centers: Cloud
+
+-Domain First, Technology Next: Domain Driven Design.
+-No Vendor lock- Multi tech stack.
+-Indidual dev , deployment - orders is development ,tested,deployed,customers are developed,tested deployment.
+   -Parrel dev.
+-Automation -dev ops
+   release - CI 
+   deployment - Containerized - Docker..
+-Introduction of Cloud computing
+...............................................................................................		..............................................................................................
+
+                                  Micro Services Design Pattern
+..............................................................................................
+
+Implementation Patterns:
+........................
+
+1.DOMAIN Models
+  Decompose by biz features
+  Decompose by sub domains
+
+..............................................................................................					Micros services Development - pattern
+..............................................................................................
+
+1.Select Language and Frameworks
+   Javascript 
+
+JavaScript Features
+ -Services are exposed as "Objects"
+
+Domain - OrderManagement
+
+-OrderMaster
+-OrderDetail
+
+Objects
+  -state
+  -behvaiour - methods -biz operation
+..............................................................................................						Service Design
+
+Services are Objects.
+....................
+
+Services are exposed as Object in diffent style.How to access those objects outside and inside system.
+
+Services are exposed as "APIS"
+
+API Design Styles:
+
+1.WebServices
+   -SOAP Based -SOA
+   -REST API
+   -GRAPHQL API
+2.RPC
+.............................................................................................
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

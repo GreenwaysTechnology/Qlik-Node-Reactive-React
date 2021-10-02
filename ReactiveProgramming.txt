@@ -218,6 +218,670 @@ Datasources:
  collection values - array
  dom events
  Promise
+........
+
+from - Array
+
+import { from, Observable, of, Subscriber } from "rxjs";
+
+class Producer {
+    constructor() {
+
+    }
+    startStream() {
+        return from([1,2,3,4,5,6,7,8])
+    }
+}
+
+class Consumer {
+    constructor(producer) {
+        this.producer = producer;
+    }
+    consumeStream() {
+        //bind listenter
+        const subscription = this.producer.startStream()
+            .subscribe(data => console.log(data),
+                err => console.log(err),
+                () => console.log('stream Completed!'));
+
+
+    }
+}
+let producer = new Producer();
+let consumer = new Consumer(producer);
+consumer.consumeStream();
+............................................................................................
+				  DOM Events
+............................................................................................
+
+import { fromEvent } from "rxjs";
+
+const mouseClicks = fromEvent(document, 'click')
+
+mouseClicks.subscribe(values=> {
+    console.log(values);
+});
+..............................................................................................
+import { Observable, of, Subscriber } from "rxjs";
+
+class Producer {
+    constructor() {
+
+    }
+    startStream() {
+        return of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+    }
+}
+
+class Consumer {
+    constructor(producer) {
+        this.producer = producer;
+    }
+    consumeStream() {
+        //bind listenter
+        const subscription = this.producer.startStream()
+            .subscribe(data => console.log(data),
+                err => console.log(err),
+                () => console.log('stream Completed!'));
+
+
+    }
+}
+let producer = new Producer();
+let consumer = new Consumer(producer);
+consumer.consumeStream();
+.............................................................................................
+				   Data Processing PipeLines
+.............................................................................................
+
+Up streams
+down streams
+
+To create Pipeline:
+observable.pipe()
+Used to stitch together functional operators into a chain
+
+
+function dostuff(a){ 
+   return a+1; //side effect
+}
+doStuff(10)
+
+
+function dostuff(obj){ 
+   return {
+      a:obj.a + 10
+   } // immutable
+}
+
+doStuff({a:10})
+
+import { range, tap } from 'rxjs';
+import { filter, map } from 'rxjs/operators'
+
+
+const isEven = i => i % 2 === 0;
+const doubleIt = i => i * 2;
+
+function stream() {
+    return range(1, 25).pipe(
+        //pipeline-1
+        tap(x => console.log(`emits every value`, x)),
+        // //pipleline-2: filter
+        // filter(i=>{
+        //     return i %2===0;
+        // })
+        // filter(i => isEven(i))
+        filter(isEven),
+        //pipeline-3
+        map(doubleIt),
+        map(doubleIt)
+    )
+}
+
+function main() {
+    stream().subscribe(data => {
+        console.log(data);
+    }, err => {
+        console.log(err);
+    }, () => console.log('stream is done'))
+}
+main();
+
+/**
+ * how to reduce lambda code
+ */
+
+// const getUser = () => {
+//     return Promise.resolve({ id: 1, name: 'subramanian' })
+// }
+// // getUser().then(function (user) {
+// //   console.log(user);
+// // }).catch(function (err) {
+// //     console.log(err);
+// // })
+// // getUser().then((user) => {
+// //     console.log(user);
+// // }).catch((err) => {
+// //     console.log(err);
+// // })
+// //destructuring
+// const { log } = console;
+// // getUser().then(user => log(user)).catch(err => log(err))
+// //method reference syntax
+// getUser().then(log).catch(log)
+....................................................................................
+Observable into Promise:
+.......................
+
+//Promise vs Observable
+/**
+ * Promise is also  push based / event based
+ * Observable is stream based, which sequence of values over period of time.
+ *  Promise is request-reply based -  emits value/error which closes the communication where as observable can emit multiple values
+ */
+
+//observable into promise.
+import { of } from 'rxjs';
+
+function getValue() {
+    return of([1, 2, 3, 4, 5, 6, 7]).toPromise();
+}
+const { log } = console;
+async function main() {
+   // getValue().then(log)
+   const value = await getValue();
+   log(value);
+}
+main()
+....................................XXXXXXXXX...............................................
+                		Cascading calls : composition
+............................................................................................
+
+Use case:
+
+1.A user needs to login first
+2.Then we can fect their user details
+3.Then we can fetch their orders.
+
+Promise Based:
+ login().then(getUserDetails).then(getOrdersByUser);
+
+import { from, of } from "rxjs";
+import { switchMap } from 'rxjs/operators';
+
+function processFlow() {
+    return of({ message: 'Logged in' }).pipe(
+        switchMap(result => {
+            //console.log(result)
+            //return user details
+            if(result.message ==='Logged in'){
+                return of({ id: 80, name: 'admin',status:result.message })
+            }else{
+                //return of('No login failed')
+            }
+           
+        }),
+        switchMap(user => {
+        //console.log(user);
+            //get the user from the previous switchMap
+            return from([{ id: 100, userId: user.id ,name:user.name }, { id: 123, userId: user.id,name:user.name }]);
+        })
+
+    )
+}
+
+function main() {
+   processFlow().subscribe(orders=>console.log('orders',orders));
+}
+main();
+
+...........................................................................................
+					Math metical operators
+........................................................................
+
+import { of } from 'rxjs'
+import { max } from 'rxjs/operators';
+
+function getCount() {
+    return of(1, 5, 5, 6, 6, 78, 89).pipe(
+        max()
+    )
+}
+const compare = (firstObj, secondObj) => {
+    if (firstObj.age > secondObj.age) {
+        return 1;
+    } else if (firstObj.age < secondObj.age) {
+        return -1;
+    } else {
+        return 0;
+    }
+}
+function findMaxAge() {
+    return of(
+        { id: 1, name: 'john', age: 48 },
+        { id: 2, name: 'chris', age: 67 },
+        { id: 3, name: 'karthik', age: 34 },
+        { id: 4, name: 'ram', age: 28 }
+    ).pipe(
+        max(compare)
+    )
+}
+
+
+const { log } = console;
+getCount().subscribe(log);
+findMaxAge().subscribe(log);
+//////////////////////////////////////////////////////////////////////////////////////////////
+			Error Handling and How to Recover from failures
+..............................................................................................
+
+//error handling operator
+import { of } from 'rxjs';
+import { catchError, map, retry } from 'rxjs/operators'
+
+function fallback() {
+    return 0;
+}
+
+function handleError() {
+    return of(1, 2, 3, 4, 5).pipe(
+        map(value => {
+            //console.log('called')
+            if (value > 3) {
+                throw new Error('ddd')
+            }
+            return value;
+        }),
+        retry(5),
+        catchError(err => {
+            return of(fallback());
+        })
+
+    );
+}
+
+function main() {
+    handleError().subscribe(
+        data => {
+            console.log('data', data)
+        }, err => {
+            console.log(err);
+        }, () => {
+            console.log('completed')
+        }
+    )
+}
+main();
+............................................................................................
+
+import { interval, of } from "rxjs";
+import { catchError, map, retryWhen, take } from 'rxjs/operators'
+
+let errorFixed = false;
+
+let values = interval(1000).pipe(
+    take(20),
+    map(val => {
+        if (errorFixed) {
+            return val;
+        } else if (val > 0 && val % 2 === 0) {
+            errorFixed = true;
+            throw { error: 'error' };
+        } else {
+            return val;
+        }
+    }),
+    retryWhen(err => {
+        console.log('retrying....')
+        return err;
+    }),
+    catchError(err => {
+        return of('fallback')
+    })
+)
+
+values.subscribe(data => console.log(data))
+..............................................................................................
+				Broad casting -Multicasting
+.............................................................................................
+
+Types of communication:
+1.unicast 
+   one to one 
+  one publisher and one subscriber
+
+2.multi cast
+
+  one publisher , many subscribers
+
+
+There are two ways to broadcast values 
+
+1.cold stream
+2.hot stream
+
+
+1.cold stream
+
+1.Observable that doesn’t emit items until a subscriber subscribes.
+
+2.If we have more than one subscriber, then observable will 
+emit sequence of items to all subscribers one by one.
+
+3.Each subscriber get "fresh copy of the data from the begining".
+
+4.Most of Observerables are Cold.
+
+
+import { interval } from 'rxjs';
+
+function emitValues() {
+    return interval(1000).pipe();
+}
+function main() {
+    //subscriber 1
+    emitValues().subscribe(values => {
+        console.log('Subscriber-1', values);
+    });
+
+    //subscriber2
+    setTimeout(() => {
+        console.log('Joining late')
+        emitValues().subscribe(values => {
+            console.log('Subscriber-2', values);
+        });
+    }, 10000);
+
+}
+main()
+.............................................................................................
+				  Hot Streaming
+............................................................................................
+Hot Observable:
+
+1.Observables that don’t wait for any subscription. 
+ They start emitting items   when created.
+
+2.They don’t emit the sequence of items again for a new subscriber.
+
+3.When an item is emitted by hot observable, all the subscribers that are   subscribed will get the emitted item at once.
+
+
+There are many ways to implement hot observables:
+
+
+converting cold into hot:
+.........................
+
+operators to convert cold into hot
+  publish
+  connect
+  share
+  multicast
+  
+
+1.ConnectableObservable : publish and connect
+  publish will start publishing data to multiple subscribers and as soon as connect is called
+
+2.share method
+  Can be shared a stream among subscribers  by call
+
+publish...connect operator:
+import { interval } from 'rxjs';
+import {publish} from 'rxjs/operators'
+
+let hotStream = interval(1000).pipe(
+    publish()
+);
+function emitValues() {
+    return hotStream;
+}
+function main() {
+    //subscriber 1
+    emitValues().subscribe(values => {
+        console.log('Subscriber-1', values);
+    });
+
+    //subscriber2
+    setTimeout(() => {
+        console.log('Joining late')
+        emitValues().subscribe(values => {
+            console.log('Subscriber-2', values);
+        });
+    }, 10000);
+
+    hotStream.connect();
+
+}
+main()
+.............................................................................................
+					share operator
+import { interval } from 'rxjs';
+import { share } from 'rxjs/operators'
+
+
+const stream = interval(1000).pipe(
+    share()
+);
+function emitValues() {
+    return stream;
+}
+function main() {
+    //subscriber 1
+    emitValues().subscribe(values => {
+        console.log('Subscriber-1', values);
+    });
+
+    //subscriber2
+    setTimeout(() => {
+        console.log('Joining late')
+        emitValues().subscribe(values => {
+            console.log('Subscriber-2', values);
+        });
+    }, 10000);
+
+
+}
+main()
+.............................................................................................
+				Hot Stream - Subject
+
+What is subject?
+ Subject is a special type of Observable that allows values to be multicasted to many observers.
+ By default Observables are unicast -  each subscribed observer owns an independent execution of the Observable.
+
+ By default , Subjects are multi cast.
+
+Subjects are like event emitters - they maintain registry of many listners(observers).
+
+Every SUbject is observable.
+
+Subjects, internally does not invoke a new execution that delivers values.It simply registers the given observer in a list of observers, how eventlisters works, we add listerner using addEventListener , just register, when even event occurs only the value will be emitted..
+
+Every Subject is Observer, You can invoke next,error, complete..
+
+Types of Subjects
+1.Subject
+2.Behaviour
+3.ReplaySubject
+4.AsyncSubject
+5.VoidSubject
+.............................................................................................
+
+Subject:
+
+import { Subject } from 'rxjs';
+
+//Create Subject
+const subject = new Subject();
+//Register subject :  registering event listener
+subject.subscribe(data => console.log('Observer-1', data));
+subject.subscribe(data => console.log('Observer-2', data));
+//emit value before registration
+for (let i = 0; i < 10; i++) {
+    subject.next(i)
+}
+
+..............................................................................................
+				Hot Stream using Subject via Observables
+............................................................................................
+
+import { from, Observable, Subject, interval } from 'rxjs';
+import {filter} from 'rxjs/operators';
+
+//Here we have just converted a unicast Observable execution to multicast through the Subject. How subjects are the only way of making any observable execution be shared to multiple observers.
+//Create Subject
+const subject = new Subject();
+//Register subject :  registering event listener
+subject.subscribe(data => console.log('Observer-1', data));
+subject.subscribe(data => console.log('Observer-2', data));
+subject.subscribe(data => console.log('Observer-3', data));
+const subscription = subject.subscribe(data => console.log('Observer-4', data));
+subject.subscribe(data => console.log('Observer-5', data));
+
+setTimeout(() => {
+    console.log('Observer-4 is leaving')
+    subscription.unsubscribe();
+}, 5000)
+
+const isEven = i => i % 2 === 0;
+
+//unicast cold stream
+// const obs = from([1,2,3,])
+const obs = interval(1000).pipe(filter(isEven))
+obs.subscribe(subject);
+..............................................................................................					BehaviourSubject
+...............................................................................................
+1.The first variants of Subject is the BehaviorSubject.
+  
+2.It has the notion of "Current Value -Default Value"
+
+3.It stores the lastest value emitted to its consumers and whenever  a new Observer Subscribes.
+
+4.The default is emitted upon subscription.
+
+import { BehaviorSubject,interval } from "rxjs";
+import {filter} from 'rxjs/operators';
+
+//creating subject
+const subject = new BehaviorSubject(9990);
+//registering 
+subject.subscribe(data => console.log('Observer-1', data));
+subject.subscribe(data => console.log('Observer-1', data));
+
+//emission
+// for (let i = 0; i < 10; i++) {
+//     setTimeout(() => {
+//         subject.next(i);
+//     }, 1000)
+// }
+const isEven = i => i % 2 === 0;
+const obs = interval(1000).pipe(filter(isEven))
+obs.subscribe(subject);
+.............................................................................................
+				 ReplaySubject
+
+
+1.ReplySubject is similar to BehaviourSubject - can have buffer defaultValue
+2.It can send values to new Subscribers, but it can also record a part of the Obseverable execution.
+
+  "ReplaySubject records multiple values from the Observable execution and replys them to new Subscribers"
+
+
+import { ReplaySubject } from "rxjs";
+
+//here 3 buffer value -how many elements can store in buffer for replay
+//Replay subject can record the lastest of N values.
+//if you dont tell, the buffer size, it can record all values
+const subject = new ReplaySubject(10);
+
+//registration
+subject.subscribe(data=>{
+    console.log('observer-1',data);
+})
+
+subject.next(1);
+subject.next(2);
+subject.next(3);
+subject.next(4);
+
+subject.subscribe(data=>{
+    console.log('observer-2',data);
+})
+
+subject.next(5);
+subject.next(6);
+subject.next(7);
+subject.next(8);
+subject.next(9);
+subject.next(10);
+
+subject.subscribe(data=>{
+    console.log('observer-3',data);
+})
+subject.next(11);
+..............................................................................................
+				  AsyncSubject
+.............................................................................................
+
+AsyncSubject is a variant where only the last value of the Observable execution is sent to is observers, and only when the "execution completes".
+
+
+import { AsyncSubject } from "rxjs";
+
+
+const subject = new AsyncSubject();
+
+subject.subscribe(data => console.log('observer-1', data))
+subject.subscribe(data => console.log('observer-2', data))
+
+subject.next(10)
+subject.next(20)
+subject.next(30)
+subject.next(40)
+subject.next(50)
+//call complete
+ subject.complete();
+
+ subject.subscribe(data => console.log('observer-3', data))
+
+*******************************************************************************************
+				Streaming + NonBlocking(Async)
+...........................................................................................
+
+What is Scheduler?
+ Scheduler is abstraction for declarative async implementation.
+
+There are operators to make async pipe line procession.
+
+import { Observable,asyncScheduler } from "rxjs";
+import { observeOn } from "rxjs/operators";
+
+const stream = new Observable(observer => {
+    observer.next(1);
+    observer.next(2);
+    observer.next(3);
+    observer.next(4);
+    observer.complete();
+}).pipe(observeOn(asyncScheduler));
+
+console.log('just before subscription')
+stream.subscribe((data) => console.log(data));
+console.log('just after subscription')
+.............................................................................................
+				import { Observable, asyncScheduler, from } from "rxjs";
+import { observeOn } from "rxjs/operators";
+
+const array = [1, 2, 3, 4, 5, 6, 7, 8];
+const stream = from(array,asyncScheduler)
+
+console.log('just before subscription')
+stream.subscribe((data) => console.log(data));
+console.log('just after subscription')
+
+.......................&&&&&&&&&&&&&&&&&&&&&&&&&...........................................
+
 
 
 
